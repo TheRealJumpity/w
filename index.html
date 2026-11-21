@@ -3,162 +3,240 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebView2 Opener</title>
+  <title></title>
   <style>
     * {
       box-sizing: border-box;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
+
     body {
       margin: 0;
       height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      background-color: #0f172a;
-      color: #f8fafc;
+      background-color: #000000;
+      color: #ffffff;
+      overflow: hidden;
     }
+
+    /* Subtle animated radial background glow */
+    body::before {
+      content: "";
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: pulseBg 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulseBg {
+      0% { transform: scale(0.85); opacity: 0.5; }
+      100% { transform: scale(1.25); opacity: 1; }
+    }
+
     .container {
+      position: relative;
       width: 100%;
-      max-width: 500px;
+      max-width: 520px;
       padding: 2rem;
-      text-align: center;
+      z-index: 1;
+      animation: fadeSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 1.5rem;
-      font-weight: 600;
-      color: #e2e8f0;
+
+    @keyframes fadeSlideUp {
+      0% {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
+
     .search-box {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.65rem;
+      padding: 0.45rem;
+      border-radius: 14px;
+      background-color: #0a0a0a;
+      border: 1.5px solid #262626;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
     }
+
+    .search-box:focus-within {
+      border-color: #ffffff;
+      box-shadow: 0 0 25px rgba(255, 255, 255, 0.14);
+      transform: translateY(-2px);
+    }
+
+    .search-box.invalid {
+      border-color: #404040;
+      animation: shake 0.35s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translateX(-2px); }
+      20%, 80% { transform: translateX(3px); }
+      30%, 50%, 70% { transform: translateX(-4px); }
+      40%, 60% { transform: translateX(4px); }
+    }
+
     input[type="text"] {
       flex: 1;
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      border: 2px solid #334155;
-      border-radius: 8px;
-      background-color: #1e293b;
+      padding: 0.85rem 1rem;
+      font-size: 1.05rem;
+      border: none;
+      border-radius: 10px;
+      background-color: transparent;
       color: #ffffff;
       outline: none;
-      transition: border-color 0.2s;
+      letter-spacing: 0.01em;
     }
-    input[type="text"]:focus {
-      border-color: #3b82f6;
+
+    input[type="text"]::placeholder {
+      color: #525252;
+      transition: color 0.25s ease;
     }
-    input[type="text"].invalid {
-      border-color: #ef4444;
+
+    input[type="text"]:focus::placeholder {
+      color: #737373;
     }
+
     button {
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      background-color: #3b82f6;
-      color: white;
+      position: relative;
+      overflow: hidden;
+      padding: 0.85rem 1.75rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      border: 1.5px solid #ffffff;
+      border-radius: 10px;
+      background-color: #ffffff;
+      color: #000000;
       cursor: pointer;
-      transition: background-color 0.2s, opacity 0.2s;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     button:hover:not(:disabled) {
-      background-color: #2563eb;
+      background-color: #e5e5e5;
+      transform: scale(1.03);
+      box-shadow: 0 0 18px rgba(255, 255, 255, 0.35);
     }
+
+    button:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+
     button:disabled {
-      background-color: #475569;
-      color: #94a3b8;
+      background-color: #111111;
+      border-color: #262626;
+      color: #404040;
       cursor: not-allowed;
-      opacity: 0.6;
+      transform: scale(1);
+      box-shadow: none;
     }
-    .status {
-      margin-top: 0.75rem;
-      font-size: 0.875rem;
-      min-height: 1.25rem;
-      color: #94a3b8;
+
+    /* Launch flash animation */
+    .launching {
+      animation: launchPulse 0.45s ease forwards;
     }
-    .status.error {
-      color: #f87171;
+
+    @keyframes launchPulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+      50% { transform: scale(1.03); box-shadow: 0 0 35px rgba(255,255,255,0.45); }
+      100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>WebView2 Launcher</h1>
-    <div class="search-box">
+    <div class="search-box" id="searchBox">
       <input 
         type="text" 
         id="urlInput" 
-        placeholder="https://example.com" 
+        placeholder="example.com" 
         autocomplete="off"
         spellcheck="false"
+        autofocus
       />
       <button id="goBtn" disabled>GO</button>
     </div>
-    <div id="statusText" class="status">Enter a valid http:// or https:// URL</div>
   </div>
 
   <script>
     const urlInput = document.getElementById('urlInput');
     const goBtn = document.getElementById('goBtn');
-    const statusText = document.getElementById('statusText');
+    const searchBox = document.getElementById('searchBox');
 
-    function isValidUrl(string) {
+    function formatAndValidate(raw) {
+      const trimmed = raw.trim();
+      if (!trimmed || /\s/.test(trimmed)) return null;
+
+      // Prepend https:// if no protocol is present
+      const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+
       try {
-        const url = new URL(string);
-        return (url.protocol === "http:" || url.protocol === "https:") && url.hostname.includes(".");
+        const parsed = new URL(normalized);
+        // Require a valid domain structure (e.g., domain.tld) or localhost
+        const host = parsed.hostname;
+        const isValidHost = host === 'localhost' || (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(host) && !host.startsWith('.') && !host.endsWith('.'));
+        
+        if ((parsed.protocol === 'http:' || parsed.protocol === 'https:') && isValidHost) {
+          return parsed.href;
+        }
+        return null;
       } catch (_) {
-        return false;
+        return null;
       }
     }
 
     urlInput.addEventListener('input', () => {
-      const value = urlInput.value.trim();
+      const validUrl = formatAndValidate(urlInput.value);
 
-      if (value === "") {
-        goBtn.disabled = true;
-        urlInput.classList.remove('invalid');
-        statusText.textContent = "Enter a valid http:// or https:// URL";
-        statusText.classList.remove('error');
-        return;
-      }
-
-      if (isValidUrl(value)) {
+      if (validUrl) {
         goBtn.disabled = false;
-        urlInput.classList.remove('invalid');
-        statusText.textContent = "Ready to launch";
-        statusText.classList.remove('error');
+        searchBox.classList.remove('invalid');
       } else {
         goBtn.disabled = true;
-        urlInput.classList.add('invalid');
-        statusText.textContent = "Invalid URL (must include http:// or https:// and a valid domain)";
-        statusText.classList.add('error');
       }
     });
 
     function launchUrl() {
-      const targetUrl = urlInput.value.trim();
-      if (!isValidUrl(targetUrl)) return;
+      const targetUrl = formatAndValidate(urlInput.value);
+      
+      if (!targetUrl) {
+        searchBox.classList.remove('invalid');
+        void searchBox.offsetWidth; // trigger reflow to restart shake animation
+        searchBox.classList.add('invalid');
+        return;
+      }
 
-      // 1. If running inside an existing WebView2 host, post a message to C#/C++
+      // Trigger launch glow animation
+      searchBox.classList.remove('launching');
+      void searchBox.offsetWidth;
+      searchBox.classList.add('launching');
+
+      // 1. If hosted inside an existing WebView2 app
       if (window.chrome && window.chrome.webview) {
         window.chrome.webview.postMessage({ action: "open_webview2", url: targetUrl });
         return;
       }
 
-      // 2. Otherwise, attempt custom protocol handler OR open a clean popup window
-      // Replace 'webview2://' with your registered Windows custom URI scheme if you have one
-      // window.location.href = `webview2://open?url=${encodeURIComponent(targetUrl)}`;
-
-      // Fallback: Open a standalone browser popup window
+      // 2. Fallback standalone window
       window.open(targetUrl, '_blank', 'width=1024,height=768,menubar=no,toolbar=no,location=yes,status=no');
     }
 
     goBtn.addEventListener('click', launchUrl);
 
     urlInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !goBtn.disabled) {
+      if (e.key === 'Enter') {
         launchUrl();
       }
     });
